@@ -109,9 +109,11 @@ export function FeedClient({
               <p className="eyebrow">No reports</p>
               <h2>No issues are showing yet</h2>
               <p className="setup-hint">
-                Open a bug report in the configured repo, or if reports are only{" "}
-                <strong>closed</strong>, set <code>GITHUB_ISSUE_STATE=all</code>. If you use{" "}
-                <code>BUGFEED_REQUIRED_LABELS</code>, make sure at least one issue has those labels.
+                The site reads from the repo set in <code>GITHUB_OWNER</code> / <code>GITHUB_REPO</code>.
+                Confirm that repo has <strong>Issues</strong> enabled and at least one issue (open or
+                closed). If your bot posts to a <em>different</em> repository, point the env vars there.
+                If you set <code>BUGFEED_REQUIRED_LABELS</code>, each issue needs one of those labels.
+                To show only open items, set <code>GITHUB_ISSUE_STATE=open</code>.
               </p>
             </>
           ) : (

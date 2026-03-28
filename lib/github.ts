@@ -21,13 +21,13 @@ function getRequiredLabels(): string[] | null {
   return list.length ? list : null;
 }
 
-/** GitHub API: open, closed, or all (default open). Use `all` to include closed bug reports. */
+/** GitHub API: open, closed, or all. Default `all` so closed/triaged reports still appear. */
 function getIssueState(): "open" | "closed" | "all" {
   const raw = process.env.GITHUB_ISSUE_STATE?.trim().toLowerCase();
-  if (raw === "closed" || raw === "all") {
+  if (raw === "open" || raw === "closed" || raw === "all") {
     return raw;
   }
-  return "open";
+  return "all";
 }
 
 function passesLabelFilter(loweredLabels: string[]): boolean {
