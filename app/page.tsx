@@ -8,11 +8,12 @@ export default async function HomePage() {
 
   return (
     <FeedPage
+      channels={data.channels}
+      description="Fresh issues from your community, published from GitHub without exposing Telegram identities."
       githubConfigured={data.githubConfigured}
       issues={data.issues}
-      channels={data.channels}
+      tags={data.tags}
       title="Public bug reports"
-      description="Fresh issues from your community, published from GitHub without exposing Telegram identities."
     />
   );
 }

@@ -3,25 +3,30 @@ import { FeedClient } from "@/components/feed-client";
 import { IssueWorkflowBadge } from "@/components/issue-workflow-badge";
 import { MetricsStrip } from "@/components/metrics-strip";
 import { SeverityBadge } from "@/components/severity-badge";
-import { BugIssue, ChannelOption } from "@/lib/types";
+import { BugIssue, ChannelOption, TagOption } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 export function FeedPage({
   issues,
   channels,
+  tags,
   title,
   description,
   activeChannel,
-  githubConfigured = true
+  githubConfigured = true,
+  showFeatured = true
 }: {
   issues: BugIssue[];
   channels: ChannelOption[];
+  tags: TagOption[];
   title: string;
   description: string;
   activeChannel?: string;
   githubConfigured?: boolean;
+  /** When false, no “Latest” hero card (e.g. search / tag listing). */
+  showFeatured?: boolean;
 }) {
-  const featured = issues[0];
+  const featured = showFeatured ? issues[0] : undefined;
 
   return (
     <div className="feed-layout">
@@ -29,6 +34,13 @@ export function FeedPage({
         <p className="eyebrow">BugXplorer</p>
         <h1>{title}</h1>
         <p className="hero-copy">{description}</p>
+        <p className="hero-links">
+          <Link href="/search">Search</Link>
+          <span className="hero-links-sep">·</span>
+          <Link href="/tags">Topics</Link>
+          <span className="hero-links-sep">·</span>
+          <Link href="/write">Submit a report</Link>
+        </p>
       </section>
 
       {githubConfigured && issues.length > 0 ? <MetricsStrip issues={issues} /> : null}
@@ -53,11 +65,12 @@ export function FeedPage({
       ) : null}
 
       <FeedClient
+        activeChannel={activeChannel}
+        channels={channels}
         githubConfigured={githubConfigured}
         issues={issues}
-        channels={channels}
-        activeChannel={activeChannel}
-        leadIssueId={featured?.id}
+        leadIssueId={showFeatured ? featured?.id : undefined}
+        tags={tags}
       />
     </div>
   );

@@ -4,31 +4,32 @@ import { buildTagOptions, getFeedData } from "@/lib/github";
 
 export const revalidate = 60;
 
-export default async function ChannelPage({
+export default async function TagDetailPage({
   params
 }: {
-  params: { name: string };
+  params: { slug: string };
 }) {
   const data = await getFeedData();
-  const channel = decodeURIComponent(params.name);
-  const issues = data.issues.filter((issue) => issue.channelSlug === channel);
+  const slug = decodeURIComponent(params.slug).toLowerCase();
+  const issues = data.issues.filter((issue) => issue.tags.some((t) => t.slug === slug));
+  const meta = data.tags.find((t) => t.slug === slug);
 
   if (!issues.length) {
     notFound();
   }
 
-  const channelMeta = data.channels.find((item) => item.slug === channel);
   const tags = buildTagOptions(issues);
 
   return (
     <FeedPage
-      activeChannel={channel}
+      activeChannel={undefined}
       channels={data.channels}
-      description={`Latest issues reported in the ${channelMeta?.name ?? channel} channel.`}
+      description={`All reports tagged ${meta?.name ?? slug} in your GitHub repository.`}
       githubConfigured={data.githubConfigured}
       issues={issues}
+      showFeatured={false}
       tags={tags}
-      title={channelMeta ? `${channelMeta.name} bugs` : "Channel bugs"}
+      title={`#${meta?.name ?? slug}`}
     />
   );
 }

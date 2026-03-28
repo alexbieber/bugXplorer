@@ -1,7 +1,8 @@
 import "server-only";
 
 import { CHANNELS, resolveChannel } from "@/lib/channels";
-import { BugIssue, ChannelOption } from "@/lib/types";
+import { BugIssue, ChannelOption, IssueComment, TagOption } from "@/lib/types";
+import { tagsFromLabels } from "@/lib/tag-utils";
 import { dedupe, slugify } from "@/lib/utils";
 
 const GITHUB_OWNER = process.env.GITHUB_OWNER;
@@ -50,9 +51,12 @@ type GitHubIssue = {
   body: string | null;
   html_url: string;
   created_at: string;
+  updated_at: string;
+  comments: number;
   labels: GitHubLabel[];
   user: {
     login: string;
+    avatar_url: string;
   };
   pull_request?: unknown;
 };
@@ -158,10 +162,14 @@ function toIssue(issue: GitHubIssue): BugIssue {
     bodySections: splitBody(body),
     excerpt: cleanBody(body).slice(0, 220) || "Open the issue for the full report.",
     createdAt: issue.created_at,
+    updatedAt: issue.updated_at,
+    commentCount: issue.comments,
     url: issue.html_url,
     reporter: getReporter(labels, issue.user.login),
+    authorLogin: issue.user.login,
     severity: getSeverity(loweredLabels),
     labels: loweredLabels,
+    tags: tagsFromLabels(labels),
     channelName: channel.channelName,
     channelSlug: channel.channelSlug,
     screenshotUrls: getScreenshotUrls(body)
@@ -189,15 +197,34 @@ async function fetchIssuesPage(page: number, state: "open" | "closed" | "all") {
   return data.filter((item) => !item.pull_request);
 }
 
+export function buildTagOptions(issues: BugIssue[]): TagOption[] {
+  const counts = new Map<string, { tag: TagOption }>();
+  for (const issue of issues) {
+    for (const tag of issue.tags) {
+      const prev = counts.get(tag.slug);
+      if (prev) {
+        prev.tag.count += 1;
+      } else {
+        counts.set(tag.slug, { tag: { ...tag, count: 1 } });
+      }
+    }
+  }
+  return Array.from(counts.values())
+    .map((item) => item.tag)
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
 export async function getFeedData(): Promise<{
   issues: BugIssue[];
   channels: ChannelOption[];
+  tags: TagOption[];
   githubConfigured: boolean;
 }> {
   if (!GITHUB_OWNER || !GITHUB_REPO) {
     return {
       issues: [],
       channels: [],
+      tags: [],
       githubConfigured: false
     };
   }
@@ -209,6 +236,8 @@ export async function getFeedData(): Promise<{
     .map(toIssue)
     .filter((issue) => passesLabelFilter(issue.labels))
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+
+  const tags = buildTagOptions(issues);
 
   const issueChannels = issues
     .filter((issue) => issue.channelName && issue.channelSlug)
@@ -229,5 +258,40 @@ export async function getFeedData(): Promise<{
     )
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  return { issues, channels, githubConfigured: true };
+  return { issues, channels, tags, githubConfigured: true };
+}
+
+export async function getIssueComments(issueNumber: number): Promise<IssueComment[]> {
+  if (!GITHUB_OWNER || !GITHUB_REPO) {
+    return [];
+  }
+
+  const response = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues/${issueNumber}/comments?per_page=100`,
+    {
+      headers: getHeaders(),
+      next: { revalidate: 60 }
+    }
+  );
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const data = (await response.json()) as {
+    id: number;
+    body: string;
+    created_at: string;
+    html_url: string;
+    user: { login: string; avatar_url: string };
+  }[];
+
+  return data.map((comment) => ({
+    id: comment.id,
+    body: comment.body,
+    authorLogin: comment.user.login,
+    authorAvatarUrl: comment.user.avatar_url,
+    createdAt: comment.created_at,
+    url: comment.html_url
+  }));
 }

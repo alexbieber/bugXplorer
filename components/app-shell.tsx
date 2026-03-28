@@ -10,19 +10,31 @@ export function AppShell({
 }: {
   children: React.ReactNode;
   reportIssueHref: string;
-  /** Public GitHub repo URL for the issues source, or empty to hide. */
   repoUrl: string;
 }) {
   const pathname = usePathname();
 
-  type NavItem = { href: string; label: string; external?: boolean };
+  type NavItem = { href: string; label: string; external?: boolean; match?: "prefix" };
   const nav: NavItem[] = [
-    { href: "/", label: "Overview" },
-    { href: "/#forensic-log", label: "Forensic log" }
+    { href: "/", label: "Feed" },
+    { href: "/search", label: "Search" },
+    { href: "/tags", label: "Topics", match: "prefix" },
+    { href: "/write", label: "Write" },
+    { href: "/about", label: "About" }
   ];
   if (repoUrl) {
     nav.push({ href: repoUrl, label: "Repository", external: true });
   }
+
+  const isActive = (item: NavItem) => {
+    if (item.external) {
+      return false;
+    }
+    if (item.match === "prefix") {
+      return pathname === item.href || pathname.startsWith(`${item.href}/`);
+    }
+    return item.href.split("#")[0] === pathname;
+  };
 
   return (
     <div className="app-root">
@@ -38,7 +50,7 @@ export function AppShell({
         <nav className="sidebar-nav">
           {nav.map((item) => {
             const external = Boolean(item.external);
-            const active = !external && item.href.split("#")[0] === pathname;
+            const active = isActive(item);
             return (
               <Link
                 key={item.label}
@@ -52,6 +64,21 @@ export function AppShell({
           })}
         </nav>
 
+        <div className="sidebar-auth">
+          <Link className="sidebar-link sidebar-link-muted" href="/login">
+            Log in
+          </Link>
+          <Link className="sidebar-link sidebar-link-muted" href="/register">
+            Register
+          </Link>
+          <Link className="sidebar-link sidebar-link-muted" href="/dashboard">
+            My posts
+          </Link>
+          <Link className="sidebar-link sidebar-link-muted" href="/settings">
+            Settings
+          </Link>
+        </div>
+
         <a
           className="sidebar-cta"
           href={reportIssueHref}
@@ -61,6 +88,11 @@ export function AppShell({
         </a>
 
         <div className="sidebar-footer">
+          <div className="sidebar-footer-links">
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/contact">Contact</Link>
+          </div>
           <span>BugXplorer</span>
         </div>
       </aside>
@@ -68,9 +100,19 @@ export function AppShell({
       <div className="dashboard-column">
         <header className="dashboard-topbar">
           <nav className="topbar-tabs" aria-label="Section">
-            <span className="topbar-tab topbar-tab-active">Explore</span>
+            <Link className={`topbar-tab${pathname === "/" ? " topbar-tab-active" : ""}`} href="/">
+              Explore
+            </Link>
+            <Link className={`topbar-tab${pathname.startsWith("/search") ? " topbar-tab-active" : ""}`} href="/search">
+              Search
+            </Link>
+            <Link
+              className={`topbar-tab${pathname.startsWith("/tags") ? " topbar-tab-active" : ""}`}
+              href="/tags"
+            >
+              Topics
+            </Link>
             <span className="topbar-tab muted">Insights</span>
-            <span className="topbar-tab muted">Archive</span>
           </nav>
           <div className="topbar-actions">
             <a

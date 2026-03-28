@@ -1,34 +1,35 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FeedPage } from "@/components/feed-page";
 import { buildTagOptions, getFeedData } from "@/lib/github";
 
 export const revalidate = 60;
 
-export default async function ChannelPage({
+export default async function UserProfilePage({
   params
 }: {
-  params: { name: string };
+  params: { username: string };
 }) {
   const data = await getFeedData();
-  const channel = decodeURIComponent(params.name);
-  const issues = data.issues.filter((issue) => issue.channelSlug === channel);
+  const handle = decodeURIComponent(params.username).toLowerCase();
+  const issues = data.issues.filter((issue) => issue.authorLogin.toLowerCase() === handle);
 
   if (!issues.length) {
     notFound();
   }
 
-  const channelMeta = data.channels.find((item) => item.slug === channel);
+  const display = issues[0]?.reporter ?? handle;
   const tags = buildTagOptions(issues);
 
   return (
     <FeedPage
-      activeChannel={channel}
       channels={data.channels}
-      description={`Latest issues reported in the ${channelMeta?.name ?? channel} channel.`}
+      description={`Reports opened on GitHub by ${display} (@${handle}).`}
       githubConfigured={data.githubConfigured}
       issues={issues}
+      showFeatured={false}
       tags={tags}
-      title={channelMeta ? `${channelMeta.name} bugs` : "Channel bugs"}
+      title={`@${handle}`}
     />
   );
 }

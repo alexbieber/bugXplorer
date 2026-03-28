@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IssueBody } from "@/components/issue-body";
+import { IssueComments } from "@/components/issue-comments";
 import { IssueWorkflowBadge } from "@/components/issue-workflow-badge";
 import { SeverityBadge } from "@/components/severity-badge";
-import { getFeedData } from "@/lib/github";
-import { formatDate } from "@/lib/utils";
+import { getFeedData, getIssueComments } from "@/lib/github";
 
 export const revalidate = 60;
 
@@ -20,6 +20,7 @@ export default async function IssuePage({
     notFound();
   }
 
+  const comments = await getIssueComments(issue.number);
   const backHref = issue.channelSlug ? `/channel/${issue.channelSlug}` : "/";
 
   return (
@@ -38,15 +39,31 @@ export default async function IssuePage({
         ) : null}
         <div className="issue-sidebar-row">
           <strong>Reporter</strong>
-          {issue.reporter}
+          <Link href={`/u/${encodeURIComponent(issue.authorLogin)}`}>{issue.reporter}</Link>
         </div>
         <div className="issue-sidebar-row">
           <strong>Created</strong>
-          {formatDate(issue.createdAt)}
+          {new Date(issue.createdAt).toLocaleString()}
         </div>
         <div className="issue-sidebar-row">
+          <strong>Updated</strong>
+          {new Date(issue.updatedAt).toLocaleString()}
+        </div>
+        {issue.tags.length > 0 ? (
+          <div className="issue-sidebar-row">
+            <strong>Topics</strong>
+            <div className="issue-sidebar-tags">
+              {issue.tags.map((t) => (
+                <Link href={`/tags/${t.slug}`} key={t.slug}>
+                  #{t.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <div className="issue-sidebar-row">
           <strong>GitHub</strong>
-          <a href={issue.url} target="_blank" rel="noreferrer">
+          <a href={issue.url} rel="noreferrer" target="_blank">
             View issue #{issue.number}
           </a>
         </div>
@@ -82,36 +99,42 @@ export default async function IssuePage({
           <h1>{issue.title}</h1>
 
           <div className="article-meta">
-            <span>{issue.reporter}</span>
+            <Link href={`/u/${encodeURIComponent(issue.authorLogin)}`}>{issue.reporter}</Link>
             <span>·</span>
-            <time dateTime={issue.createdAt}>{formatDate(issue.createdAt)}</time>
+            <time dateTime={issue.createdAt}>{new Date(issue.createdAt).toLocaleDateString()}</time>
             <span>·</span>
-            <a href={issue.url} target="_blank" rel="noreferrer">
+            <span>{issue.commentCount} comments</span>
+            <span>·</span>
+            <a href={issue.url} rel="noreferrer" target="_blank">
               View on GitHub
             </a>
           </div>
         </header>
 
         <IssueBody issue={issue} />
+        <IssueComments comments={comments} />
       </div>
 
       <aside className="issue-aside">
         <h3>Quick actions</h3>
         <ul>
           <li>
-            <a href={issue.url} target="_blank" rel="noreferrer">
+            <a href={issue.url} rel="noreferrer" target="_blank">
               Open on GitHub
             </a>
           </li>
           <li>
-            <a href={`${issue.url}#issuecomment-new`} target="_blank" rel="noreferrer">
+            <a href={`${issue.url}#issuecomment-new`} rel="noreferrer" target="_blank">
               Comment on GitHub
             </a>
+          </li>
+          <li>
+            <Link href="/write">Submit another report</Link>
           </li>
         </ul>
         <div className="issue-aside-note">
           <strong>Discussion</strong>
-          Comments and review happen on GitHub. This page is a read-only mirror of the issue body.
+          Comments sync from GitHub. Post replies there — they appear here after the next refresh (up to ~60s).
         </div>
       </aside>
     </div>
