@@ -2,9 +2,17 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { IssueWorkflowBadge } from "@/components/issue-workflow-badge";
 import { SeverityBadge } from "@/components/severity-badge";
 import { BugIssue, ChannelOption } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+
+const timelineMark: Record<string, string> = {
+  critical: "⚠",
+  high: "↑",
+  medium: "◆",
+  low: "○"
+};
 
 export function FeedClient({
   issues,
@@ -17,7 +25,6 @@ export function FeedClient({
   channels: ChannelOption[];
   activeChannel?: string;
   githubConfigured?: boolean;
-  /** When set, hide this issue from the list on the default view (avoids duplicating the featured story). */
   leadIssueId?: number;
 }) {
   const [query, setQuery] = useState("");
@@ -49,12 +56,16 @@ export function FeedClient({
 
   return (
     <section className="feed-section">
+      <div className="forensic-log-header" id="forensic-log">
+        <h2 className="forensic-log-title">Forensic log</h2>
+      </div>
+
       <div className="toolbar">
         <input
           aria-label="Search bug reports"
           className="search-input"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search"
+          placeholder="Filter reports…"
           value={query}
         />
 
@@ -78,7 +89,7 @@ export function FeedClient({
           <p>
             {listIssues.length}
             {leadIssueId != null ? " more " : " "}
-            stor{listIssues.length === 1 ? "y" : "ies"}
+            entr{listIssues.length === 1 ? "y" : "ies"}
           </p>
           {channel !== "all" ? (
             <Link className="subtle-link" href={channel === activeChannel ? "/" : `/channel/${channel}`}>
@@ -90,22 +101,28 @@ export function FeedClient({
 
       <div className="feed-list">
         {listIssues.map((issue) => (
-          <article className="feed-story" key={issue.id}>
-            <div className="feed-story-meta">
-              <span>{issue.channelName || "General"}</span>
-              <span className="dot">·</span>
-              <time dateTime={issue.createdAt}>{formatDate(issue.createdAt)}</time>
+          <article className="feed-story" data-severity={issue.severity} key={issue.id}>
+            <div className="feed-story-timeline" aria-hidden title={issue.severity}>
+              {timelineMark[issue.severity] ?? "◆"}
             </div>
-            <Link className="feed-story-link" href={`/issue/${issue.number}`}>
-              <h2 className="feed-story-title">{issue.title}</h2>
-            </Link>
-            <p className="feed-story-excerpt">{issue.excerpt}</p>
-            <div className="feed-story-footer">
-              <SeverityBadge severity={issue.severity} />
-              <span>{issue.reporter}</span>
-              <a className="gh-link" href={issue.url} target="_blank" rel="noreferrer">
-                Open on GitHub
-              </a>
+            <div className="feed-story-body">
+              <div className="feed-story-meta">
+                <IssueWorkflowBadge issue={issue} />
+                <span>{issue.channelName || "General"}</span>
+                <span className="dot">·</span>
+                <time dateTime={issue.createdAt}>{formatDate(issue.createdAt)}</time>
+              </div>
+              <Link className="feed-story-link" href={`/issue/${issue.number}`}>
+                <h2 className="feed-story-title">{issue.title}</h2>
+              </Link>
+              <p className="feed-story-excerpt">{issue.excerpt}</p>
+              <div className="feed-story-footer">
+                <SeverityBadge severity={issue.severity} />
+                <span>{issue.reporter}</span>
+                <a className="gh-link" href={issue.url} target="_blank" rel="noreferrer">
+                  Open on GitHub
+                </a>
+              </div>
             </div>
           </article>
         ))}

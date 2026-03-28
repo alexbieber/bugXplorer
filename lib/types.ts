@@ -1,6 +1,8 @@
 export type BugIssue = {
   id: number;
   number: number;
+  /** GitHub issue open or closed — drives workflow badges (OPEN / INVESTIGATING / RESOLVED). */
+  state: "open" | "closed";
   title: string;
   body: string;
   bodySections: string[];

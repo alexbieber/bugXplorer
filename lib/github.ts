@@ -45,6 +45,7 @@ type GitHubLabel = {
 type GitHubIssue = {
   id: number;
   number: number;
+  state: "open" | "closed";
   title: string;
   body: string | null;
   html_url: string;
@@ -151,6 +152,7 @@ function toIssue(issue: GitHubIssue): BugIssue {
   return {
     id: issue.id,
     number: issue.number,
+    state: issue.state,
     title: issue.title,
     body,
     bodySections: splitBody(body),
