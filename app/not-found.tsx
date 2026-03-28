@@ -2,6 +2,7 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
+    <div className="feed-layout">
     <div className="empty-state">
       <p className="eyebrow">404</p>
       <h1>Nothing published here yet.</h1>
@@ -9,6 +10,7 @@ export default function NotFound() {
       <Link className="primary-link" href="/">
         Return to the feed
       </Link>
+    </div>
     </div>
   );
 }

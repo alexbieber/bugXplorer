@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { FeedClient } from "@/components/feed-client";
+import { SeverityBadge } from "@/components/severity-badge";
 import { BugIssue, ChannelOption } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
 export function FeedPage({
   issues,
@@ -22,29 +25,26 @@ export function FeedPage({
   return (
     <div className="feed-layout">
       <section className="hero">
-        <p className="eyebrow">Public Bug Report Site</p>
+        <p className="eyebrow">Bug reports</p>
         <h1>{title}</h1>
         <p className="hero-copy">{description}</p>
-        <div className="hero-note">
-          <span>Telegram group</span>
-          <span>GitHub Issues</span>
-          <span>BugFeed</span>
-          <span>Public site</span>
-        </div>
       </section>
 
       {featured ? (
-        <section className="featured-card">
-          <div>
-            <p className="featured-label">Most recent report</p>
+        <section className="featured-story">
+          <Link className="featured-story-inner" href={`/issue/${featured.number}`}>
+            <p className="featured-kicker">Latest</p>
             <h2>{featured.title}</h2>
             <p>{featured.excerpt}</p>
-          </div>
-          <div className="featured-meta">
-            <span>{featured.channelName || "General"}</span>
-            <span>{featured.severity}</span>
-            <span>{featured.reporter}</span>
-          </div>
+            <div className="featured-meta">
+              <SeverityBadge severity={featured.severity} />
+              <span>{featured.channelName || "General"}</span>
+              <span className="meta-sep">·</span>
+              <time dateTime={featured.createdAt}>{formatDate(featured.createdAt)}</time>
+              <span className="meta-sep">·</span>
+              <span>{featured.reporter}</span>
+            </div>
+          </Link>
         </section>
       ) : null}
 
@@ -53,6 +53,7 @@ export function FeedPage({
         issues={issues}
         channels={channels}
         activeChannel={activeChannel}
+        leadIssueId={featured?.id}
       />
     </div>
   );

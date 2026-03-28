@@ -10,12 +10,15 @@ export function FeedClient({
   issues,
   channels,
   activeChannel,
-  githubConfigured = true
+  githubConfigured = true,
+  leadIssueId
 }: {
   issues: BugIssue[];
   channels: ChannelOption[];
   activeChannel?: string;
   githubConfigured?: boolean;
+  /** When set, hide this issue from the list on the default view (avoids duplicating the featured story). */
+  leadIssueId?: number;
 }) {
   const [query, setQuery] = useState("");
   const [channel, setChannel] = useState(activeChannel ?? "all");
@@ -35,6 +38,15 @@ export function FeedClient({
     });
   }, [channel, issues, query]);
 
+  const listIssues = useMemo(() => {
+    const searching = query.trim().length > 0;
+    const channelFiltered = channel !== "all";
+    if (leadIssueId != null && !searching && !channelFiltered) {
+      return filtered.filter((issue) => issue.id !== leadIssueId);
+    }
+    return filtered;
+  }, [filtered, leadIssueId, query, channel]);
+
   return (
     <section className="feed-section">
       <div className="toolbar">
@@ -42,7 +54,7 @@ export function FeedClient({
           aria-label="Search bug reports"
           className="search-input"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search reports, channels, or reporters"
+          placeholder="Search"
           value={query}
         />
 
@@ -61,31 +73,38 @@ export function FeedClient({
         </select>
       </div>
 
-      <div className="results-header">
-        <p>{filtered.length} report{filtered.length === 1 ? "" : "s"}</p>
-        {channel !== "all" ? (
-          <Link className="subtle-link" href={channel === activeChannel ? "/" : `/channel/${channel}`}>
-            {channel === activeChannel ? "View all reports" : "Open channel page"}
-          </Link>
-        ) : null}
-      </div>
+      {listIssues.length > 0 ? (
+        <div className="results-header">
+          <p>
+            {listIssues.length}
+            {leadIssueId != null ? " more " : " "}
+            stor{listIssues.length === 1 ? "y" : "ies"}
+          </p>
+          {channel !== "all" ? (
+            <Link className="subtle-link" href={channel === activeChannel ? "/" : `/channel/${channel}`}>
+              {channel === activeChannel ? "View all" : "Open channel"}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="feed-list">
-        {filtered.map((issue) => (
-          <article className="issue-card" key={issue.id}>
-            <div className="issue-card-meta">
+        {listIssues.map((issue) => (
+          <article className="feed-story" key={issue.id}>
+            <div className="feed-story-meta">
               <span>{issue.channelName || "General"}</span>
-              <span>{formatDate(issue.createdAt)}</span>
+              <span className="dot">·</span>
+              <time dateTime={issue.createdAt}>{formatDate(issue.createdAt)}</time>
             </div>
-            <Link className="issue-card-link" href={`/issue/${issue.number}`}>
-              <h2>{issue.title}</h2>
+            <Link className="feed-story-link" href={`/issue/${issue.number}`}>
+              <h2 className="feed-story-title">{issue.title}</h2>
             </Link>
-            <p>{issue.excerpt}</p>
-            <div className="issue-card-footer">
+            <p className="feed-story-excerpt">{issue.excerpt}</p>
+            <div className="feed-story-footer">
               <SeverityBadge severity={issue.severity} />
-              <span>By {issue.reporter}</span>
-              <a href={issue.url} target="_blank" rel="noreferrer">
-                GitHub
+              <span>{issue.reporter}</span>
+              <a className="gh-link" href={issue.url} target="_blank" rel="noreferrer">
+                Open on GitHub
               </a>
             </div>
           </article>
@@ -119,8 +138,8 @@ export function FeedClient({
           ) : (
             <>
               <p className="eyebrow">No matches</p>
-              <h2>No bug reports match your filters.</h2>
-              <p>Try a different keyword or switch back to all channels.</p>
+              <h2>No stories match your filters.</h2>
+              <p>Try another search or switch back to all channels.</p>
             </>
           )}
         </div>
