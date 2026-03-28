@@ -8,6 +8,36 @@ const GITHUB_OWNER = process.env.GITHUB_OWNER;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
+/** Comma-separated label names; issue must have at least one (case-insensitive). If unset, all issues are shown. */
+function getRequiredLabels(): string[] | null {
+  const raw = process.env.BUGFEED_REQUIRED_LABELS?.trim();
+  if (!raw) {
+    return null;
+  }
+  const list = raw
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  return list.length ? list : null;
+}
+
+/** GitHub API: open, closed, or all (default open). Use `all` to include closed bug reports. */
+function getIssueState(): "open" | "closed" | "all" {
+  const raw = process.env.GITHUB_ISSUE_STATE?.trim().toLowerCase();
+  if (raw === "closed" || raw === "all") {
+    return raw;
+  }
+  return "open";
+}
+
+function passesLabelFilter(loweredLabels: string[]): boolean {
+  const required = getRequiredLabels();
+  if (!required) {
+    return true;
+  }
+  return required.some((label) => loweredLabels.includes(label));
+}
+
 type GitHubLabel = {
   name: string;
 };
@@ -136,13 +166,13 @@ function toIssue(issue: GitHubIssue): BugIssue {
   };
 }
 
-async function fetchIssuesPage(page: number) {
+async function fetchIssuesPage(page: number, state: "open" | "closed" | "all") {
   if (!GITHUB_OWNER || !GITHUB_REPO) {
     return [];
   }
 
   const response = await fetch(
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues?state=open&per_page=100&page=${page}`,
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues?state=${state}&per_page=100&page=${page}`,
     {
       headers: getHeaders(),
       next: { revalidate: 60 }
@@ -160,19 +190,22 @@ async function fetchIssuesPage(page: number) {
 export async function getFeedData(): Promise<{
   issues: BugIssue[];
   channels: ChannelOption[];
+  githubConfigured: boolean;
 }> {
   if (!GITHUB_OWNER || !GITHUB_REPO) {
     return {
       issues: [],
-      channels: []
+      channels: [],
+      githubConfigured: false
     };
   }
 
-  const pages = await Promise.all([fetchIssuesPage(1), fetchIssuesPage(2)]);
+  const state = getIssueState();
+  const pages = await Promise.all([fetchIssuesPage(1, state), fetchIssuesPage(2, state)]);
   const issues = pages
     .flat()
     .map(toIssue)
-    .filter((issue) => issue.labels.includes("bug") || issue.labels.includes("telegram-reported"))
+    .filter((issue) => passesLabelFilter(issue.labels))
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 
   const issueChannels = issues
@@ -194,5 +227,5 @@ export async function getFeedData(): Promise<{
     )
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  return { issues, channels };
+  return { issues, channels, githubConfigured: true };
 }

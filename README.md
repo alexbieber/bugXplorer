@@ -18,7 +18,7 @@ A **Medium-style** public site for community bug reports. It reads from **GitHub
 ## Requirements
 
 - Node.js 18+
-- A GitHub repository whose issues are labeled with `bug` or `telegram-reported`, plus optional `channel: …`, severity (`high`, `medium`, `low`, `critical`), and reporter labels (`reporter: …`)
+- A GitHub repository with **issues** (any labels). By default **all open issues** are shown. Optional labels: `channel: …`, severity (`high`, `medium`, `low`, `critical`), reporter (`reporter: …`).
 
 ## Setup
 
@@ -35,6 +35,8 @@ A **Medium-style** public site for community bug reports. It reads from **GitHub
    | `GITHUB_OWNER` | User or organization name |
    | `GITHUB_REPO`  | Repository containing the issues |
    | `GITHUB_TOKEN` | Fine-grained or classic PAT with `Issues: Read` (private repos need this) |
+   | `GITHUB_ISSUE_STATE` | Optional. `open` (default), `closed`, or `all`. Use `all` if reports are closed and the feed looks empty. |
+   | `BUGFEED_REQUIRED_LABELS` | Optional. Comma-separated labels; an issue must have at least one. If unset, every issue is listed. |
 
 3. Map Telegram sources to display names in `lib/channels.ts` (server-side only). Issue labels like `channel: main` are resolved to these names.
 

@@ -21,6 +21,7 @@ export default async function ChannelPage({
 
   return (
     <FeedPage
+      githubConfigured={data.githubConfigured}
       issues={issues}
       channels={data.channels}
       activeChannel={channel}

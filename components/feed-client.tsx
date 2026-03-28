@@ -9,11 +9,13 @@ import { formatDate } from "@/lib/utils";
 export function FeedClient({
   issues,
   channels,
-  activeChannel
+  activeChannel,
+  githubConfigured = true
 }: {
   issues: BugIssue[];
   channels: ChannelOption[];
   activeChannel?: string;
+  githubConfigured?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [channel, setChannel] = useState(activeChannel ?? "all");
@@ -92,9 +94,33 @@ export function FeedClient({
 
       {!filtered.length ? (
         <div className="empty-state">
-          <p className="eyebrow">No matches</p>
-          <h2>No bug reports match your filters.</h2>
-          <p>Try a different keyword or switch back to all channels.</p>
+          {!githubConfigured ? (
+            <>
+              <p className="eyebrow">Configuration</p>
+              <h2>Connect a GitHub repository</h2>
+              <p className="setup-hint">
+                Add <code>GITHUB_OWNER</code>, <code>GITHUB_REPO</code>, and (for private repos){" "}
+                <code>GITHUB_TOKEN</code> to <code>.env.local</code> (see <code>.env.local.example</code>),
+                then restart the dev server or redeploy.
+              </p>
+            </>
+          ) : issues.length === 0 ? (
+            <>
+              <p className="eyebrow">No reports</p>
+              <h2>No issues are showing yet</h2>
+              <p className="setup-hint">
+                Open a bug report in the configured repo, or if reports are only{" "}
+                <strong>closed</strong>, set <code>GITHUB_ISSUE_STATE=all</code>. If you use{" "}
+                <code>BUGFEED_REQUIRED_LABELS</code>, make sure at least one issue has those labels.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="eyebrow">No matches</p>
+              <h2>No bug reports match your filters.</h2>
+              <p>Try a different keyword or switch back to all channels.</p>
+            </>
+          )}
         </div>
       ) : null}
     </section>

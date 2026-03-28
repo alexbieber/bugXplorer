@@ -6,13 +6,16 @@ export function FeedPage({
   channels,
   title,
   description,
-  activeChannel
+  activeChannel,
+  githubConfigured = true
 }: {
   issues: BugIssue[];
   channels: ChannelOption[];
   title: string;
   description: string;
   activeChannel?: string;
+  /** False when GITHUB_OWNER / GITHUB_REPO are not set. */
+  githubConfigured?: boolean;
 }) {
   const featured = issues[0];
 
@@ -46,6 +49,7 @@ export function FeedPage({
       ) : null}
 
       <FeedClient
+        githubConfigured={githubConfigured}
         issues={issues}
         channels={channels}
         activeChannel={activeChannel}

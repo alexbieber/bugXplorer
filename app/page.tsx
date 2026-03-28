@@ -8,6 +8,7 @@ export default async function HomePage() {
 
   return (
     <FeedPage
+      githubConfigured={data.githubConfigured}
       issues={data.issues}
       channels={data.channels}
       title="Public bug reports"
